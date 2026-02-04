@@ -25,7 +25,6 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
 
     @Override
     public boolean consideredComplete() {
-      //Safe if the server hasn't initiated the handshake yet.
       return true;
     }
   },
@@ -34,16 +33,17 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
     public void onLoginSuccess(VelocityServerConnection serverCon, ConnectedPlayer player) {
       serverCon.setConnectionPhase(VelocityForgeBackendConnectionPhase.COMPLETE);
 
-      serverCon.getConnection().getChannel().pipeline().addBefore(Connections.MINECRAFT_DECODER,
+      serverCon.getConnection().getChannel().pipeline().addBefore(
+              Connections.MINECRAFT_DECODER,
               ForgeConstants.COMMAND_ERROR_CATCHER,
-              new CommandDecoderErrorCatcher(serverCon.getConnection().getProtocolVersion(),player));
+              new CommandDecoderErrorCatcher(
+                      serverCon.getConnection().getProtocolVersion(), player));
     }
 
     @Override
     void onTransitionToNewPhase(VelocityServerConnection connection) {
       MinecraftConnection mc = connection.getConnection();
       if (mc != null) {
-        //This looks ugly. But unless the player didn't have a FML marker, we're fine.
         mc.setType(connection.getPlayer().getConnection().getType());
       }
     }
@@ -56,53 +56,51 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
     }
   };
 
-  public ForgeHandshake handshake = new ForgeHandshake();
-  CountDownLatch remainingRegistries;
-
   VelocityForgeBackendConnectionPhase() {
   }
 
-  public void handle(VelocityServerConnection server, ConnectedPlayer player, IForgeLoginWrapperPacket<Context> message) {
-    VelocityForgeBackendConnectionPhase newPhase = getNewPhase(server,message);
+  public void handle(VelocityServerConnection server, ConnectedPlayer player,
+                     IForgeLoginWrapperPacket<Context> message) {
+    VelocityForgeBackendConnectionPhase newPhase = getNewPhase(server, message);
 
     server.setConnectionPhase(newPhase);
 
-    //Forge -> Forge
-
-    VelocityForgeClientConnectionPhase clientPhase = (VelocityForgeClientConnectionPhase) player.getPhase();
-
+    VelocityForgeClientConnectionPhase clientPhase =
+            (VelocityForgeClientConnectionPhase) player.getPhase();
+    ForgePlayerData playerData = ForgePlayerData.get(player.getUniqueId());
 
     if (!player.isActive()) {
       return;
     }
 
     if (!clientPhase.consideredComplete()) {
-      //Initial Forge
       if (message instanceof ModListPacket modListPacket) {
-        clientPhase.forgeHandshake = new ForgeHandshake();
+        playerData.resetClientHandshake();
       }
       if (message instanceof RegistryPacket registryPacket) {
-        clientPhase.forgeHandshake.addRegistry(registryPacket);
+        playerData.getClientHandshake().addRegistry(registryPacket);
       }
       player.getConnection().write(message);
     } else {
-      //Reset client if not ready to receive new handshake
-      if (clientPhase.getResetType() == VelocityForgeClientConnectionPhase.ClientResetType.CRP ||
-              clientPhase.getResetType() == VelocityForgeClientConnectionPhase.ClientResetType.SR) {
+      VelocityForgeClientConnectionPhase.ClientResetType resetType =
+              clientPhase.getResetType(player);
+      if (resetType == VelocityForgeClientConnectionPhase.ClientResetType.CRP ||
+              resetType == VelocityForgeClientConnectionPhase.ClientResetType.SR) {
         clientPhase.resetConnectionPhase(player);
         player.getConnection().write(message);
         return;
       }
 
-      if (clientPhase.forgeHandshake.getModListReplyPacket() == null) {
-        //We have nothing to respond with during this handshake. Unable to proceed.
+      ForgeHandshake clientHandshake = playerData.getClientHandshake();
+      if (clientHandshake.getModListReplyPacket() == null) {
         if (Ambassador.getInstance().config.isEnableKickReset()) {
-          //Kick-reset
           Ambassador.getInstance().reconnectSwitchPlayer(player);
         } else {
-          Ambassador.getInstance().logger.error("Unable for {} to switch servers. Vanilla({}) -> Forge({}) switch " +
+          Ambassador.getInstance().logger.error(
+                  "Unable for {} to switch servers. Vanilla({}) -> Forge({}) switch " +
                           "without client side mod or kick-reset enabled is not yet supported!",
-                  player.getGameProfile().getName(), player.getConnectedServer().getServerInfo().getName(),
+                  player.getGameProfile().getName(),
+                  player.getConnectedServer().getServerInfo().getName(),
                   server.getServerInfo().getName());
           server.disconnect();
         }
@@ -110,58 +108,85 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
       }
 
       if (message instanceof ModListPacket modListPacket) {
-        remainingRegistries = new CountDownLatch(modListPacket.getRegistries().size());
+        playerData.resetBackendHandshake();
 
-        if (Ambassador.getInstance().config.isDebugMode())
-          player.sendMessage(Component.text("Expecting " + modListPacket.getRegistries().size() +
-                  " packets from server " + server.getServer().getServerInfo().getName()));
+        boolean bypassRegistryCheck =
+                Ambassador.getInstance().config.isBypassRegistryCheck();
 
-        long time = System.currentTimeMillis();
-        CompletableFuture.runAsync(() -> {
-          try {
-            remainingRegistries.await();
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        if (bypassRegistryCheck) {
+          if (Ambassador.getInstance().config.isDebugMode()) {
+            player.sendMessage(Component.text(
+                    "Bypass enabled - skipping registry wait for " +
+                            server.getServer().getServerInfo().getName()));
           }
-        }).thenAcceptAsync((v) -> {
+          server.ensureConnected().write(clientHandshake.getModListReplyPacket());
+        } else {
+          playerData.createRegistryLatch(modListPacket.getRegistries().size());
 
-          if(Ambassador.getInstance().config.isDebugMode()) {
-            player.sendMessage(Component.text("Handshake took: " + (System.currentTimeMillis()-time) + " ms"));
-            player.sendMessage(Component.text("Avg packet time" +
-                    (System.currentTimeMillis()-time)/modListPacket.getRegistries().size() + " ms"));
-          }
+          if (Ambassador.getInstance().config.isDebugMode())
+            player.sendMessage(Component.text(
+                    "Expecting " + modListPacket.getRegistries().size() +
+                            " packets from server " +
+                            server.getServer().getServerInfo().getName()));
 
-          if (Ambassador.getInstance().config.isBypassRegistryCheck() ||
-                  clientPhase.forgeHandshake.isCompatible(handshake)) {
-            server.ensureConnected().write(clientPhase.forgeHandshake.getModListReplyPacket());
-          } else if (Ambassador.getInstance().config.isEnableKickReset()) {
-            //Kick-reset
-            Ambassador.getInstance().reconnectSwitchPlayer(player);
-          } else {
-            Ambassador.getInstance().logger.error("Unable to switch due to the registries of " +
-                    server.getServer().getServerInfo().getName() + " being different from the registries of " +
-                    player.getConnectedServer().getServer().getServerInfo().getName());
-            server.disconnect();
-          }
-        }, server.ensureConnected().eventLoop());
+          long time = System.currentTimeMillis();
+          CountDownLatch latch = playerData.getRegistryLatch();
+
+          CompletableFuture.runAsync(() -> {
+            try {
+              latch.await();
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          }).thenAcceptAsync((v) -> {
+            if (Ambassador.getInstance().config.isDebugMode()) {
+              player.sendMessage(Component.text(
+                      "Handshake took: " + (System.currentTimeMillis() - time) + " ms"));
+              player.sendMessage(Component.text(
+                      "Avg packet time " +
+                              (System.currentTimeMillis() - time) /
+                                      modListPacket.getRegistries().size() + " ms"));
+            }
+
+            ForgeHandshake backendHandshake = playerData.getBackendHandshake();
+            if (clientHandshake.isCompatible(backendHandshake)) {
+              server.ensureConnected().write(clientHandshake.getModListReplyPacket());
+            } else if (Ambassador.getInstance().config.isEnableKickReset()) {
+              Ambassador.getInstance().reconnectSwitchPlayer(player);
+            } else {
+              Ambassador.getInstance().logger.error(
+                      "Unable to switch due to the registries of " +
+                              server.getServer().getServerInfo().getName() +
+                              " being different from the registries of " +
+                              player.getConnectedServer().getServer()
+                                      .getServerInfo().getName());
+              server.disconnect();
+            }
+          }, server.ensureConnected().eventLoop());
+        }
       } else if (message instanceof RegistryPacket registryPacket) {
-        server.getConnection().write(new ACKPacket(Context.fromContext(message.getContext(), true)));
-        handshake.addRegistry(registryPacket);
-        remainingRegistries.countDown();
+        server.getConnection().write(
+                new ACKPacket(Context.fromContext(message.getContext(), true)));
+        ForgeHandshake backendHandshake = playerData.getBackendHandshake();
+        backendHandshake.addRegistry(registryPacket);
+        CountDownLatch latch = playerData.getRegistryLatch();
+        if (latch != null) {
+          latch.countDown();
+        }
       } else if (message instanceof ConfigDataPacket) {
-        server.getConnection().write(new ACKPacket(Context.fromContext(message.getContext(), true)));
+        server.getConnection().write(
+                new ACKPacket(Context.fromContext(message.getContext(), true)));
       } else if (message instanceof GenericForgeLoginWrapperPacket<Context> packet
               && ForgeHandshakeUtils.ThirdPartyRegistryUtils.isThirdPartyPacket(packet)) {
           server.getConnection().write(
-                  ForgeHandshakeUtils.ThirdPartyRegistryUtils.getThirdPartyChannel(packet).
-                          generateResponsePacket(
-                                  Context.ClientContext.fromContext(packet.getContext(), true),
-                                  clientPhase.forgeHandshake));
+                  ForgeHandshakeUtils.ThirdPartyRegistryUtils
+                          .getThirdPartyChannel(packet)
+                          .generateResponsePacket(
+                                  Context.ClientContext.fromContext(
+                                          packet.getContext(), true),
+                                  clientHandshake));
       }
     }
-    //Forge server
-    //To avoid unnecessary resets, we wait until we get the handshake even if we know that we should
-    //reset because that the previous server was Forge.
   }
 
   public void onLoginSuccess(VelocityServerConnection serverCon, ConnectedPlayer player) {
@@ -174,8 +199,9 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
     return this;
   }
 
-  private VelocityForgeBackendConnectionPhase getNewPhase(VelocityServerConnection serverConnection,
-                                                       IForgeLoginWrapperPacket<Context> packet) {
+  private VelocityForgeBackendConnectionPhase getNewPhase(
+          VelocityServerConnection serverConnection,
+          IForgeLoginWrapperPacket<Context> packet) {
     VelocityForgeBackendConnectionPhase phaseToTransitionTo = nextPhase();
     if (phaseToTransitionTo != this) {
       phaseToTransitionTo.onTransitionToNewPhase(serverConnection);
@@ -184,10 +210,12 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
   }
 
   @Override
-  public boolean handle(VelocityServerConnection server, ConnectedPlayer player, PluginMessagePacket message) {
+  public boolean handle(VelocityServerConnection server, ConnectedPlayer player,
+                        PluginMessagePacket message) {
     if (message.getChannel().equals("ambassador:commands")) {
       AvailableCommandsPacket packet = new AvailableCommandsPacket();
-      packet.decode(message.content(), ProtocolUtils.Direction.CLIENTBOUND,server.getConnection().getProtocolVersion());
+      packet.decode(message.content(), ProtocolUtils.Direction.CLIENTBOUND,
+              server.getConnection().getProtocolVersion());
       server.getConnection().getActiveSessionHandler().handle(packet);
       return true;
     }
@@ -197,7 +225,4 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
   public boolean consideredComplete() {
     return false;
   }
-
-
-
 }

@@ -27,9 +27,14 @@ public class ForgeHandshake {
     }
 
     public void addRegistry(RegistryPacket packet) {
-        Checksum registryChecksum = new Adler32();
-        registryChecksum.update(packet.getSnapshot());
-        registries.put(packet.getRegistryName(), registryChecksum.getValue());
+        byte[] snapshot = packet.getSnapshot();
+        if (snapshot != null) {
+            Checksum registryChecksum = new Adler32();
+            registryChecksum.update(snapshot);
+            registries.put(packet.getRegistryName(), registryChecksum.getValue());
+        } else {
+            registries.put(packet.getRegistryName(), 0L);
+        }
     }
 
     public Map<String, Long> getRegistries() {
