@@ -118,6 +118,20 @@ class ForgePlayerDataTest {
   }
 
   @Test
+  void theDriftCheckIsDueOnceWhenTheLastExpectedRegistryArrives() {
+    PlayerSession first = session(UUID.randomUUID());
+    ForgePlayerData.claim(first.player());
+    ForgePlayerData data = ForgePlayerData.get(first.player());
+
+    assertFalse(data.countRegistryForDriftCheck());
+    data.expectRegistriesForDriftCheck(2);
+
+    assertFalse(data.countRegistryForDriftCheck());
+    assertTrue(data.countRegistryForDriftCheck());
+    assertFalse(data.countRegistryForDriftCheck());
+  }
+
+  @Test
   void readingNeverCreatesData() {
     PlayerSession unknown = session(UUID.randomUUID());
 

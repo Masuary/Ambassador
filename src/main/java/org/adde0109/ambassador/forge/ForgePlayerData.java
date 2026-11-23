@@ -2,6 +2,7 @@ package org.adde0109.ambassador.forge;
 
 import com.velocitypowered.api.proxy.Player;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +18,8 @@ public class ForgePlayerData {
     private VelocityForgeClientConnectionPhase.ClientResetType resetType =
             VelocityForgeClientConnectionPhase.ClientResetType.UNKNOWN;
     private volatile CountDownLatch registryLatch;
+    private String clientRegistrySourceServer;
+    private int registriesUntilDriftCheck = -1;
 
     private ForgePlayerData(Player owner) {
         this.owner = owner;
@@ -83,5 +86,26 @@ public class ForgePlayerData {
 
     public CountDownLatch getRegistryLatch() {
         return registryLatch;
+    }
+
+    public void recordClientRegistrySource(String serverName) {
+        this.clientRegistrySourceServer = serverName;
+    }
+
+    public String getClientRegistrySourceServer() {
+        return Objects.requireNonNull(clientRegistrySourceServer,
+                "the client's registries were never recorded from a backend");
+    }
+
+    public void expectRegistriesForDriftCheck(int registryCount) {
+        this.registriesUntilDriftCheck = registryCount;
+    }
+
+    public boolean countRegistryForDriftCheck() {
+        if (registriesUntilDriftCheck <= 0) {
+            return false;
+        }
+        registriesUntilDriftCheck--;
+        return registriesUntilDriftCheck == 0;
     }
 }

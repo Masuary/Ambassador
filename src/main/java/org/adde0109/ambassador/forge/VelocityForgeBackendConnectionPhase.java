@@ -74,16 +74,17 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
     ForgePlayerData playerData = ForgePlayerData.get(player);
 
     if (!clientPhase.consideredComplete()) {
-      forwardInitialHandshakePacket(player, playerData, message);
+      forwardInitialHandshakePacket(server, player, playerData, message);
     } else {
       handleServerSwitchPacket(server, player, clientPhase, playerData, message);
     }
   }
 
-  private static void forwardInitialHandshakePacket(ConnectedPlayer player, ForgePlayerData playerData,
-                                                    IForgeLoginWrapperPacket<?> message) {
+  private static void forwardInitialHandshakePacket(VelocityServerConnection server, ConnectedPlayer player,
+                                                    ForgePlayerData playerData, IForgeLoginWrapperPacket<?> message) {
     if (message instanceof ModListPacket) {
       playerData.resetClientHandshake();
+      playerData.recordClientRegistrySource(server.getServerInfo().getName());
     }
     if (message instanceof RegistryPacket registryPacket) {
       playerData.getClientHandshake().addRegistry(registryPacket);
@@ -118,6 +119,9 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
       if (latch != null) {
         latch.countDown();
       }
+      if (playerData.countRegistryForDriftCheck()) {
+        checkRegistryDrift(server, player, playerData, clientHandshake);
+      }
     } else if (message instanceof ConfigDataPacket) {
       acknowledge(server, message);
     } else if (message instanceof GenericForgeLoginWrapperPacket<?> packet
@@ -151,9 +155,26 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
                 "Bypass enabled - skipping registry wait for " +
                         server.getServer().getServerInfo().getName()));
       }
+      playerData.expectRegistriesForDriftCheck(modListPacket.getRegistries().size());
       server.ensureConnected().write(clientHandshake.getModListReplyPacket());
     } else {
       answerModListOnceRegistriesMatch(server, player, playerData, clientHandshake, modListPacket);
+    }
+  }
+
+  private static void checkRegistryDrift(VelocityServerConnection server, ConnectedPlayer player,
+                                         ForgePlayerData playerData, ForgeHandshake clientHandshake) {
+    String sourceServer = playerData.getClientRegistrySourceServer();
+    String targetServer = server.getServerInfo().getName();
+    ForgeHandshake backendHandshake = playerData.getBackendHandshake();
+    Ambassador.getInstance().getRegistryDriftDetector()
+            .reportOnce(sourceServer, clientHandshake, targetServer, backendHandshake)
+            .ifPresent(Ambassador.getInstance().logger::warn);
+    if (Ambassador.getInstance().config.isDebugMode()) {
+      int differingCount = RegistryDriftDetector.differingRegistries(clientHandshake, backendHandshake).size();
+      player.sendMessage(Component.text(differingCount == 0
+              ? "Registries of " + targetServer + " match " + sourceServer
+              : differingCount + " registries of " + targetServer + " differ from " + sourceServer));
     }
   }
 

@@ -28,6 +28,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.adde0109.ambassador.forge.RegistryDriftDetector;
 import org.adde0109.ambassador.velocity.VelocityBackendChannelInitializer;
 import org.adde0109.ambassador.velocity.VelocityServerChannelInitializer;
 import org.adde0109.ambassador.velocity.VelocityEventHandler;
@@ -54,6 +55,8 @@ public class Ambassador {
   public AmbassadorConfig config;
 
   private static final MapWithExpiration<String, RegisteredServer> TEMPORARY_FORCED = new MapWithExpiration<>();
+
+  private final RegistryDriftDetector registryDriftDetector = new RegistryDriftDetector();
 
   private static Ambassador instance;
   public static Ambassador getInstance() {
@@ -129,6 +132,10 @@ public class Ambassador {
               }
             });
 
+  }
+
+  public RegistryDriftDetector getRegistryDriftDetector() {
+    return registryDriftDetector;
   }
 
   public static MapWithExpiration<String, RegisteredServer> getTemporaryForced() {
