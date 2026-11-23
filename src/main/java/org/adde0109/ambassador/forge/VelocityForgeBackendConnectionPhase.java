@@ -65,13 +65,13 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
 
     server.setConnectionPhase(newPhase);
 
-    VelocityForgeClientConnectionPhase clientPhase =
-            (VelocityForgeClientConnectionPhase) player.getPhase();
-    ForgePlayerData playerData = ForgePlayerData.get(player.getUniqueId());
-
     if (!player.isActive()) {
       return;
     }
+
+    VelocityForgeClientConnectionPhase clientPhase =
+            (VelocityForgeClientConnectionPhase) player.getPhase();
+    ForgePlayerData playerData = ForgePlayerData.get(player);
 
     if (!clientPhase.consideredComplete()) {
       if (message instanceof ModListPacket) {

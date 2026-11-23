@@ -3,12 +3,16 @@ package org.adde0109.ambassador.velocity;
 import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.*;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.util.ModInfo;
 import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.network.Connections;
 import com.velocitypowered.proxy.protocol.StateRegistry;
@@ -20,6 +24,8 @@ import org.adde0109.ambassador.forge.VelocityForgeClientConnectionPhase;
 import org.adde0109.ambassador.forge.pipeline.ForgeLoginWrapperCodec;
 import org.adde0109.ambassador.forge.pipeline.ForgeLoginWrapperHandler;
 
+import java.util.Optional;
+
 public class VelocityEventHandler {
 
   private final Ambassador ambassador;
@@ -29,10 +35,35 @@ public class VelocityEventHandler {
   }
 
   @Subscribe(order = PostOrder.FIRST)
+  public void onLoginEvent(LoginEvent event) {
+    if (!event.getResult().isAllowed()) {
+      return;
+    }
+    Player player = event.getPlayer();
+    Optional<Player> handshakingSession = ForgePlayerData.findOtherActiveHolder(player);
+    if (handshakingSession.isEmpty()) {
+      return;
+    }
+    if (kickExistingPlayers()) {
+      handshakingSession.get().disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE);
+    } else {
+      ambassador.logger.info("Refusing a second login of {}: a session of this account is in its Forge handshake",
+              player.getUsername());
+      event.setResult(ResultedEvent.ComponentResult.denied(ForgeConstants.ALREADY_CONNECTED_MESSAGE));
+    }
+  }
+
+  @Subscribe(order = PostOrder.FIRST)
   public void onPostLoginEvent(PostLoginEvent event, Continuation continuation) {
     ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
     if (player.getPhase() instanceof VelocityForgeClientConnectionPhase) {
-      ForgePlayerData.getOrCreate(player.getUniqueId());
+      if (!claimHandshake(player)) {
+        ambassador.logger.warn("Disconnecting {}: another session of this account is in its Forge handshake",
+                player.getUsername());
+        player.disconnect(ForgeConstants.ALREADY_CONNECTED_MESSAGE);
+        continuation.resume();
+        return;
+      }
 
       ((VelocityServer) Ambassador.getInstance().server).unregisterConnection(player);
 
@@ -87,6 +118,21 @@ public class VelocityEventHandler {
 
   @Subscribe
   public void onDisconnectEvent(DisconnectEvent event) {
-    ForgePlayerData.remove(event.getPlayer().getUniqueId());
+    ForgePlayerData.remove(event.getPlayer());
+  }
+
+  private boolean claimHandshake(ConnectedPlayer player) {
+    if (!kickExistingPlayers()) {
+      return ForgePlayerData.claim(player);
+    }
+    ForgePlayerData.findOtherActiveHolder(player)
+            .ifPresent(previousSession -> previousSession.disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE));
+    ForgePlayerData.takeOver(player);
+    return true;
+  }
+
+  private boolean kickExistingPlayers() {
+    VelocityConfiguration configuration = ((VelocityServer) ambassador.server).getConfiguration();
+    return configuration.isOnlineMode() && configuration.isOnlineModeKickExistingPlayers();
   }
 }

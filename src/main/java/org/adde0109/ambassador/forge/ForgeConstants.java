@@ -1,6 +1,8 @@
 package org.adde0109.ambassador.forge;
 
 import com.velocitypowered.proxy.connection.ConnectionType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class ForgeConstants {
   public static final String HANDLER = "Modern Forge handler";
@@ -17,4 +19,9 @@ public class ForgeConstants {
   public static final String FML3Marker = "\0FML3\0";
   public static final ConnectionType ForgeFML2 = new ForgeFMLConnectionType(2);
   public static final ConnectionType ForgeFML3 = new ForgeFMLConnectionType(3);
+
+  public static final Component ALREADY_CONNECTED_MESSAGE =
+          Component.translatable("velocity.error.already-connected-proxy", NamedTextColor.RED);
+  public static final Component DUPLICATE_LOGIN_MESSAGE =
+          Component.translatable("multiplayer.disconnect.duplicate_login");
 }

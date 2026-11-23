@@ -84,12 +84,20 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
               .get(ForgeConstants.SERVER_SUCCESS_LISTENER)).sendPacket();
       connection.setState(StateRegistry.PLAY);
       player.getConnection().getChannel().pipeline().remove(ForgeConstants.PLUGIN_PACKET_QUEUE);
-      ((VelocityServer) Ambassador.getInstance().server).registerConnection(player);
+      VelocityServer server = (VelocityServer) Ambassador.getInstance().server;
+      boolean registered = server.getPlayer(player.getUniqueId()).orElse(null) == player
+              || server.registerConnection(player);
+      if (!registered) {
+        Ambassador.getInstance().logger.warn(
+                "Disconnecting {}: another session of this account joined during its Forge handshake",
+                player.getUsername());
+        player.disconnect(ForgeConstants.ALREADY_CONNECTED_MESSAGE);
+      }
     }
 
     @Override
     public void resetConnectionPhase(ConnectedPlayer player) {
-      ForgePlayerData data = ForgePlayerData.get(player.getUniqueId());
+      ForgePlayerData data = ForgePlayerData.get(player);
       data.getResetType().doReset(player);
     }
 
@@ -108,7 +116,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
 
   public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket<?> msg,
                         VelocityServerConnection server) {
-    ForgePlayerData data = ForgePlayerData.get(player.getUniqueId());
+    ForgePlayerData data = ForgePlayerData.get(player);
     ForgeHandshake handshake = data.getClientHandshake();
 
     if (msg.getContext().getChannelName().equals("zeta:main")
@@ -145,7 +153,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
     player.setPhase(COMPLETE);
     COMPLETE.onTransitionToNewPhase(player);
     if (resetType != null) {
-      ForgePlayerData data = ForgePlayerData.get(player.getUniqueId());
+      ForgePlayerData data = ForgePlayerData.get(player);
       data.setResetType(resetType);
       if (Ambassador.getInstance().config.isDebugMode()) {
         player.sendMessage(Component.text("Reset type: " + resetType.toString()));
@@ -170,7 +178,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
   }
 
   public ClientResetType getResetType(ConnectedPlayer player) {
-    return ForgePlayerData.get(player.getUniqueId()).getResetType();
+    return ForgePlayerData.get(player).getResetType();
   }
 
   private ClientResetType detectResetType(ConnectedPlayer player) {
@@ -193,7 +201,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
   }
 
   public void updateResetType(ConnectedPlayer player) {
-    ForgePlayerData data = ForgePlayerData.get(player.getUniqueId());
+    ForgePlayerData data = ForgePlayerData.get(player);
     data.setResetType(detectResetType(player));
     if (Ambassador.getInstance().config.isDebugMode()) {
       player.sendMessage(Component.text("Reset type: " + data.getResetType().toString()));
