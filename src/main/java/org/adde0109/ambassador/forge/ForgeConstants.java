@@ -15,6 +15,18 @@ public class ForgeConstants {
   public static final String FORGE_HANDSHAKE_HANDLER = "ambassador-forge-handler";
   public static final String COMMAND_ERROR_CATCHER = "ambassador-command-catcher";
 
+  public static final String HANDSHAKE_CHANNEL = "fml:handshake";
+  public static final String LOGIN_WRAPPER_CHANNEL = "fml:loginwrapper";
+
+  public static final int MOD_LIST_PACKET_ID = 1;
+  public static final int MOD_LIST_REPLY_PACKET_ID = 2;
+  public static final int REGISTRY_PACKET_ID = 3;
+  public static final int CONFIG_DATA_PACKET_ID = 4;
+  public static final int MOD_DATA_PACKET_ID = 5;
+  public static final int RESET_PACKET_ID = 98;
+  public static final int ACK_PACKET_ID = 99;
+  public static final int RESET_LOGIN_MESSAGE_ID = 98;
+
   public static final String FML2Marker = "\0FML2\0";
   public static final String FML3Marker = "\0FML3\0";
   public static final ConnectionType ForgeFML2 = new ForgeFMLConnectionType(2);

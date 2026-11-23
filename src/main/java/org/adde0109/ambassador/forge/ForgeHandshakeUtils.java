@@ -30,18 +30,18 @@ public class ForgeHandshakeUtils {
 
   public static byte[] generateResetPacket() {
     ByteArrayDataOutput dataAndPacketIdStream = ByteStreams.newDataOutput();
-    writeVarInt(dataAndPacketIdStream,98);
+    writeVarInt(dataAndPacketIdStream, ForgeConstants.RESET_PACKET_ID);
 
     ByteArrayDataOutput stream = ByteStreams.newDataOutput();
     byte[] dataAndPacketId = dataAndPacketIdStream.toByteArray();
-    writeUtf(stream,"fml:handshake");
+    writeUtf(stream, ForgeConstants.HANDSHAKE_CHANNEL);
     writeVarInt(stream,dataAndPacketId.length);
     stream.write(dataAndPacketId);
     return stream.toByteArray();
   }
   public static byte[] generatePluginResetPacket() {
     ByteArrayDataOutput dataAndPacketIdStream = ByteStreams.newDataOutput();
-    writeVarInt(dataAndPacketIdStream,98);
+    writeVarInt(dataAndPacketIdStream, ForgeConstants.RESET_PACKET_ID);
     return dataAndPacketIdStream.toByteArray();
   }
 

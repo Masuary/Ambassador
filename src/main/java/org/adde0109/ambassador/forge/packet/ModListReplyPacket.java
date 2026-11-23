@@ -5,6 +5,7 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.adde0109.ambassador.forge.ForgeConstants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +52,7 @@ public class ModListReplyPacket implements IForgeLoginWrapperPacket<Context.Clie
   public ByteBuf encode() {
     ByteBuf buf = Unpooled.buffer();
 
-    ProtocolUtils.writeVarInt(buf, 2);
+    ProtocolUtils.writeVarInt(buf, ForgeConstants.MOD_LIST_REPLY_PACKET_ID);
 
     ProtocolUtils.writeVarInt(buf, mods.size());
     mods.forEach(m -> ProtocolUtils.writeString(buf, m));

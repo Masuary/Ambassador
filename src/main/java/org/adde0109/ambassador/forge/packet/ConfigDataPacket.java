@@ -3,6 +3,7 @@ package org.adde0109.ambassador.forge.packet;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.adde0109.ambassador.forge.ForgeConstants;
 
 public class ConfigDataPacket implements IForgeLoginWrapperPacket<Context> {
 
@@ -28,7 +29,7 @@ public class ConfigDataPacket implements IForgeLoginWrapperPacket<Context> {
     public ByteBuf encode() {
         ByteBuf buf = Unpooled.buffer();
 
-        ProtocolUtils.writeVarInt(buf, 4);
+        ProtocolUtils.writeVarInt(buf, ForgeConstants.CONFIG_DATA_PACKET_ID);
 
         ProtocolUtils.writeString(buf, fileName);
         ProtocolUtils.writeByteArray(buf, fileData);

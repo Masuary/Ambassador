@@ -55,7 +55,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
     @Override
     public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket<?> msg,
                           VelocityServerConnection server) {
-      if (msg.getContext().getResponseID() == 98) {
+      if (msg.getContext().getResponseID() == ForgeConstants.RESET_LOGIN_MESSAGE_ID) {
         player.getConnection().getChannel().pipeline().remove(ForgeConstants.RESET_LISTENER);
         player.setPhase(NOT_STARTED);
 
@@ -227,11 +227,11 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
 
         if (connection.getState() == StateRegistry.PLAY
                 || connection.getState() == StateRegistry.CONFIG) {
-          connection.write(new PluginMessagePacket("fml:handshake",
+          connection.write(new PluginMessagePacket(ForgeConstants.HANDSHAKE_CHANNEL,
                   Unpooled.wrappedBuffer(ForgeHandshakeUtils.generatePluginResetPacket())));
           connection.setState(StateRegistry.LOGIN);
         } else {
-          connection.write(new LoginPluginMessagePacket(98,"fml:loginwrapper",
+          connection.write(new LoginPluginMessagePacket(ForgeConstants.RESET_LOGIN_MESSAGE_ID, ForgeConstants.LOGIN_WRAPPER_CHANNEL,
                   Unpooled.wrappedBuffer(ForgeHandshakeUtils.generateResetPacket())));
         }
 

@@ -9,6 +9,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.adde0109.ambassador.Ambassador;
+import org.adde0109.ambassador.forge.ForgeConstants;
 import org.adde0109.ambassador.forge.packet.*;
 
 import java.util.HashMap;
@@ -27,7 +28,7 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
   @Override
   public boolean acceptInboundMessage(Object msg) throws Exception {
     return (msg instanceof LoginPluginMessagePacket
-            && ((LoginPluginMessagePacket) msg).getChannel().equals("fml:loginwrapper"))
+            && ((LoginPluginMessagePacket) msg).getChannel().equals(ForgeConstants.LOGIN_WRAPPER_CHANNEL))
             || (msg instanceof LoginPluginResponsePacket
             && loginWrapperContexts.containsKey(((LoginPluginResponsePacket) msg).getId()));
   }
@@ -60,17 +61,17 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
     //Decoding of data starts here - channel already read
     int originalReaderIndex = buf.readerIndex();
 
-    if (!context.getChannelName().equals("fml:handshake")) {
+    if (!context.getChannelName().equals(ForgeConstants.HANDSHAKE_CHANNEL)) {
       out.add(GenericForgeLoginWrapperPacket.read(buf, context));
     } else {
       ProtocolUtils.readVarInt(buf);
       int packetID = ProtocolUtils.readVarInt(buf);
       if (context instanceof Context.ClientContext clientContext) {
         switch (packetID) {
-          case 2:
+          case ForgeConstants.MOD_LIST_REPLY_PACKET_ID:
             out.add(ModListReplyPacket.read(buf, clientContext));
             break;
-          case 99:
+          case ForgeConstants.ACK_PACKET_ID:
             out.add(new ACKPacket(clientContext));
             break;
           default:
@@ -78,16 +79,16 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
         }
       } else {
         switch (packetID) {
-          case 1:
+          case ForgeConstants.MOD_LIST_PACKET_ID:
             out.add(ModListPacket.read(buf, context, FML3));
             break;
-          case 3:
+          case ForgeConstants.REGISTRY_PACKET_ID:
             out.add(RegistryPacket.read(buf, context, FML3));
             break;
-          case 4:
+          case ForgeConstants.CONFIG_DATA_PACKET_ID:
             out.add(ConfigDataPacket.read(buf, context, FML3));
             break;
-          case 5:
+          case ForgeConstants.MOD_DATA_PACKET_ID:
             if (FML3) {
               out.add(ModDataPacket.read(buf, context));
             } else {
@@ -134,7 +135,7 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
     if (msg.getContext() instanceof Context.ClientContext clientContext) {
       out.add(new LoginPluginResponsePacket(clientContext.getResponseID(), clientContext.success(), wrapped));
     } else {
-      out.add(new LoginPluginMessagePacket(msg.getContext().getResponseID(), "fml:loginwrapper", wrapped));
+      out.add(new LoginPluginMessagePacket(msg.getContext().getResponseID(), ForgeConstants.LOGIN_WRAPPER_CHANNEL, wrapped));
       if (!(msg instanceof ModDataPacket)) {  //ModDataPacket doesn't require a response
         this.loginWrapperContexts.put(msg.getContext().getResponseID(), msg.getContext());
       }

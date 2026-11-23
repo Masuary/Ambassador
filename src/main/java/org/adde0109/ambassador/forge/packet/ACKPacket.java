@@ -3,6 +3,7 @@ package org.adde0109.ambassador.forge.packet;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.adde0109.ambassador.forge.ForgeConstants;
 
 public class ACKPacket implements IForgeLoginWrapperPacket<Context.ClientContext> {
 
@@ -15,7 +16,7 @@ public class ACKPacket implements IForgeLoginWrapperPacket<Context.ClientContext
     public ByteBuf encode() {
         ByteBuf buf = Unpooled.buffer();
 
-        ProtocolUtils.writeVarInt(buf, 99);
+        ProtocolUtils.writeVarInt(buf, ForgeConstants.ACK_PACKET_ID);
 
         return buf;
     }
