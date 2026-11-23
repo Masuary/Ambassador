@@ -34,6 +34,9 @@ dependencies {
     testImplementation("com.velocitypowered:velocity-proxy")
     testImplementation("com.electronwill.night-config:toml:3.6.6")
     testImplementation("com.github.spotbugs:spotbugs-annotations:4.7.3")
+    testImplementation("io.netty:netty-buffer:4.1.90.Final")
+    testImplementation("io.netty:netty-transport:4.1.90.Final")
+    testImplementation("io.netty:netty-codec:4.1.90.Final")
 }
 
 tasks {
