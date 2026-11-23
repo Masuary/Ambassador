@@ -75,9 +75,8 @@ public class Ambassador {
 
   @Subscribe(order = PostOrder.LAST)
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    initMetrics();
-
     try {
+      initMetrics();
       Files.createDirectories(dataDirectory);
 
       Path configPath = dataDirectory.resolve("Ambassador.toml");
@@ -86,7 +85,7 @@ public class Ambassador {
       inject();
 
       server.getEventManager().register(this, new VelocityEventHandler(this));
-    } catch (Exception e) {
+    } catch (Exception | LinkageError e) {
       logger.error("Ambassador failed to load: Forge clients cannot join through this proxy until this is fixed", e);
     }
   }
@@ -98,7 +97,7 @@ public class Ambassador {
       final AmbassadorConfig newconfig = AmbassadorConfig.read(configPath);
 
       config = newconfig;
-    } catch (Exception e) {
+    } catch (Exception | LinkageError e) {
       logger.error("Ambassador config reload failed, the old config stays in use", e);
     }
   }
@@ -144,7 +143,7 @@ public class Ambassador {
 
   public void reconnectSwitchPlayer(ConnectedPlayer player) {
     TEMPORARY_FORCED.put(player.getUsername(), player.getConnectionInFlight().getServer(),
-            config.getServerSwitchCancellationTime(), TimeUnit.SECONDS);
+            config.getKickResetReconnectSeconds(), TimeUnit.SECONDS);
 
     MiniMessage mm = MiniMessage.miniMessage();
     Component parsed = mm.deserialize(config.getKickReconnectMessageString());

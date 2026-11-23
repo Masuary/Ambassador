@@ -33,7 +33,7 @@ This fork runs the Forge 1.18.2 proxy of a Vault Hunters network on Velocity 3.4
 * `serverRedirectTimeout` is applied (it was always 30); `bypass-mod-checks` has no effect and is documented as such.
 * Load and reload failures are logged with their stack trace.
 
-Build: `git submodule update --init` (Velocity at the pinned commit), then `./gradlew build` with Java 21. The jar is `build/libs/Ambassador-Velocity-<version>-all.jar`. Java warnings fail the build (`-Xlint:all -Werror`).
+Build: `git submodule update --init` (Velocity at the pinned commit), then `sh gradlew build` with Java 21. The jar is `build/libs/Ambassador-Velocity-<version>-all.jar`. Java warnings fail the build (`-Xlint:all -Werror`).
 
 Settings the network uses (`plugins/ambassador/Ambassador.toml`): `bypass-registry-checks = true` (every backend runs the same mods with identical registry ids), `enable-kick-reset = false`, `reconnect-message = "<gold>Please reconnect</gold>"` (MiniMessage, not `&` codes). Proxy-Compatible-Forge runs on every backend.
 

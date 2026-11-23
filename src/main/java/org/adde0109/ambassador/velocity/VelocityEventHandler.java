@@ -45,22 +45,25 @@ public class VelocityEventHandler {
       return;
     }
     if (kickExistingPlayers()) {
-      handshakingSession.get().disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE);
-    } else {
-      ambassador.logger.info("Refusing a second login of {}: a session of this account is in its Forge handshake",
-              player.getUsername());
-      event.setResult(ResultedEvent.ComponentResult.denied(ForgeConstants.ALREADY_CONNECTED_MESSAGE));
+      return;
     }
+    ambassador.logger.info("Refusing a second login of {}: a session of this account is in its Forge handshake",
+            player.getUsername());
+    event.setResult(ResultedEvent.ComponentResult.denied(ForgeConstants.ALREADY_CONNECTED_MESSAGE));
   }
 
   @Subscribe(order = PostOrder.FIRST)
   public void onPostLoginEvent(PostLoginEvent event, Continuation continuation) {
     ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
     if (player.getPhase() instanceof VelocityForgeClientConnectionPhase) {
+      if (!player.isActive()) {
+        continuation.resume();
+        return;
+      }
       if (!claimHandshake(player)) {
         ambassador.logger.warn("Disconnecting {}: another session of this account is in its Forge handshake",
                 player.getUsername());
-        player.disconnect(ForgeConstants.ALREADY_CONNECTED_MESSAGE);
+        refuseDuringLogin(player);
         continuation.resume();
         return;
       }
@@ -101,7 +104,7 @@ public class VelocityEventHandler {
   @Subscribe
   public void onPlayerChannelRegisterEvent(PlayerChannelRegisterEvent event) {
     ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
-    if (!(player.getConnection().getType() instanceof ForgeFMLConnectionType)) {
+    if (!(player.getConnection().getType() instanceof ForgeFMLConnectionType) || !player.isActive()) {
       return;
     }
     player.setModInfo(new ModInfo("Channels", event.getChannels().stream().map((id) -> {
@@ -129,6 +132,14 @@ public class VelocityEventHandler {
             .ifPresent(previousSession -> previousSession.disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE));
     ForgePlayerData.takeOver(player);
     return true;
+  }
+
+  private void refuseDuringLogin(ConnectedPlayer player) {
+    player.getConnection().eventLoop().execute(() -> {
+      ((VelocityServer) ambassador.server).unregisterConnection(player);
+      player.getConnection().setState(StateRegistry.LOGIN);
+      player.disconnect0(ForgeConstants.ALREADY_CONNECTED_MESSAGE, true);
+    });
   }
 
   private boolean kickExistingPlayers() {

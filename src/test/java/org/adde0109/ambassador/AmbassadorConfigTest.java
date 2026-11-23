@@ -36,6 +36,13 @@ class AmbassadorConfigTest {
   }
 
   @Test
+  void kickResetKeepsAReconnectWindowWhenServerRedirectIsDisabled() throws IOException {
+    assertEquals(30, readConfig("config-version = \"2.1\"\nserverRedirectTimeout = -1\n").getKickResetReconnectSeconds());
+    assertEquals(30, readConfig("config-version = \"2.1\"\nserverRedirectTimeout = 0\n").getKickResetReconnectSeconds());
+    assertEquals(45, readConfig("config-version = \"2.1\"\nserverRedirectTimeout = 45\n").getKickResetReconnectSeconds());
+  }
+
+  @Test
   void aMissingFileIsCreatedWithTheDefaults() throws IOException {
     Path configPath = configDirectory.resolve("Ambassador.toml");
 

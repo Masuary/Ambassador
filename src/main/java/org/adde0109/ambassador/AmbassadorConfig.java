@@ -100,6 +100,10 @@ public class AmbassadorConfig {
         return serverSwitchCancellationTime;
     }
 
+    public int getKickResetReconnectSeconds() {
+        return serverSwitchCancellationTime > 0 ? serverSwitchCancellationTime : 30;
+    }
+
     public boolean isSilenceWarnings() {
         return silenceWarnings;
     }

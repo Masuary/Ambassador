@@ -120,7 +120,12 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
         latch.countDown();
       }
       if (playerData.countRegistryForDriftCheck()) {
-        checkRegistryDrift(server, player, playerData, clientHandshake);
+        try {
+          checkRegistryDrift(server, player, playerData, clientHandshake);
+        } catch (RuntimeException e) {
+          Ambassador.getInstance().logger.error("Registry drift check failed for " + player.getUsername()
+                  + "; the server switch goes on", e);
+        }
       }
     } else if (message instanceof ConfigDataPacket) {
       acknowledge(server, message);
@@ -158,6 +163,7 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
       playerData.expectRegistriesForDriftCheck(modListPacket.getRegistries().size());
       server.ensureConnected().write(clientHandshake.getModListReplyPacket());
     } else {
+      playerData.expectRegistriesForDriftCheck(-1);
       answerModListOnceRegistriesMatch(server, player, playerData, clientHandshake, modListPacket);
     }
   }
