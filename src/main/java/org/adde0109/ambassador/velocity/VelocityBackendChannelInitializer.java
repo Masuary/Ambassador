@@ -7,7 +7,6 @@ import io.netty.channel.ChannelInitializer;
 import org.adde0109.ambassador.forge.ForgeConstants;
 import org.adde0109.ambassador.velocity.backend.FMLMarkerAdder;
 import org.adde0109.ambassador.velocity.backend.VelocityForgeBackendHandshakeHandler;
-import org.slf4j.Logger;
 
 
 import java.lang.reflect.Method;

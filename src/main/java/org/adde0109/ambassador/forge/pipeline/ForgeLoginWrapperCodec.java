@@ -7,9 +7,7 @@ import com.velocitypowered.proxy.protocol.util.DeferredByteBufHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.util.ReferenceCountUtil;
 import org.adde0109.ambassador.Ambassador;
 import org.adde0109.ambassador.forge.packet.*;
 
@@ -43,14 +41,13 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
     if (in instanceof LoginPluginResponsePacket msg) {
       //Continue from stored context
       context = Context.fromContext(
-              loginWrapperContexts.remove(((LoginPluginResponsePacket) msg).getId()), msg.isSuccess());
+              loginWrapperContexts.remove(msg.getId()), msg.isSuccess());
       if (!msg.isSuccess()) {
         //Nothing to read, just create an empty packet.
         out.add(GenericForgeLoginWrapperPacket.read(buf, context));
         return;
       } else {
-        String channel = ProtocolUtils.readString(buf); //Read the channel even though we know the channel by context.
-        Ambassador.getInstance();
+        ProtocolUtils.readString(buf); //Read the channel even though we know the channel by context.
       }
     } else {
       //New context.
@@ -66,7 +63,7 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
     if (!context.getChannelName().equals("fml:handshake")) {
       out.add(GenericForgeLoginWrapperPacket.read(buf, context));
     } else {
-      int length = ProtocolUtils.readVarInt(buf);
+      ProtocolUtils.readVarInt(buf);
       int packetID = ProtocolUtils.readVarInt(buf);
       if (context instanceof Context.ClientContext clientContext) {
         switch (packetID) {
@@ -77,13 +74,7 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
             out.add(new ACKPacket(clientContext));
             break;
           default:
-            //Undo decoding
-            buf.readerIndex(originalReaderIndex);
-            out.add(GenericForgeLoginWrapperPacket.read(buf, context));
-            if (Ambassador.getInstance().config.isDebugMode()) {
-              Ambassador.getInstance().logger.warn(
-                      "Unrecognised packet id received from client on fml:handshake: " + packetID);
-            }
+            readUnrecognised(buf, originalReaderIndex, context, packetID, "client", out);
         }
       } else {
         switch (packetID) {
@@ -99,18 +90,24 @@ public class ForgeLoginWrapperCodec extends MessageToMessageCodec<DeferredByteBu
           case 5:
             if (FML3) {
               out.add(ModDataPacket.read(buf, context));
-              break;
+            } else {
+              readUnrecognised(buf, originalReaderIndex, context, packetID, "server", out);
             }
+            break;
           default:
-            //Undo decoding
-            buf.readerIndex(originalReaderIndex);
-            out.add(GenericForgeLoginWrapperPacket.read(buf, context));
-            if (Ambassador.getInstance().config.isDebugMode()) {
-              Ambassador.getInstance().logger.warn(
-                      "Unrecognised packet id received from server on fml:handshake: " + packetID);
-            }
+            readUnrecognised(buf, originalReaderIndex, context, packetID, "server", out);
         }
       }
+    }
+  }
+
+  private static void readUnrecognised(ByteBuf buf, int originalReaderIndex, Context context, int packetID,
+                                       String sender, List<Object> out) {
+    buf.readerIndex(originalReaderIndex);
+    out.add(GenericForgeLoginWrapperPacket.read(buf, context));
+    if (Ambassador.getInstance().config.isDebugMode()) {
+      Ambassador.getInstance().logger.warn(
+              "Unrecognised packet id received from " + sender + " on fml:handshake: " + packetID);
     }
   }
 

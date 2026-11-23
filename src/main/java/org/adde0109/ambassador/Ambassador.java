@@ -18,10 +18,8 @@ import java.util.Map;
 
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.VelocityServer;
-import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.network.ConnectionManager;
-import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
 import com.velocitypowered.proxy.protocol.packet.brigadier.ArgumentIdentifier;
 import com.velocitypowered.proxy.protocol.packet.brigadier.ArgumentPropertyRegistry;
@@ -122,6 +120,7 @@ public class Ambassador {
     }
   }
 
+  @SuppressWarnings("deprecation")
   private void inject() throws ReflectiveOperationException {
     Field cmField = VelocityServer.class.getDeclaredField("cm");
     cmField.setAccessible(true);
@@ -167,7 +166,7 @@ public class Ambassador {
   }
 
   private void initMetrics() {
-    Metrics metrics = metricsFactory.make(this, 15655);
+    metricsFactory.make(this, 15655);
   }
 
   public static class MapWithExpiration<K, V> {

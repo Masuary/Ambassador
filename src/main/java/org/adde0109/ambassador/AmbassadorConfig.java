@@ -1,11 +1,7 @@
 package org.adde0109.ambassador;
 
-import com.electronwill.nightconfig.core.conversion.InvalidValueException;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.google.gson.annotations.Expose;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import java.io.IOException;
 import java.net.URL;
@@ -21,8 +17,6 @@ public class AmbassadorConfig {
     private boolean silenceWarnings = false;
     @Expose
     private boolean bypassRegistryCheck = false;
-    @Expose
-    private boolean bypassModCheck = false;
 
     @Expose
     private boolean debugMode = false;
@@ -33,11 +27,10 @@ public class AmbassadorConfig {
     @Expose
     private String kickReconnectMessageString = "<red>Please reconnect.</red>";
 
-    private AmbassadorConfig(boolean silenceWarnings, boolean bypassRegistryCheck, boolean bypassModCheck,
+    private AmbassadorConfig(boolean silenceWarnings, boolean bypassRegistryCheck,
                              boolean debugMode, boolean enableKickReset, String kickReconnectMessageString) {
         this.silenceWarnings = silenceWarnings;
         this.bypassRegistryCheck = bypassRegistryCheck;
-        this.bypassModCheck = bypassModCheck;
         this.debugMode = debugMode;
         this.enableKickReset = enableKickReset;
         this.kickReconnectMessageString = kickReconnectMessageString;
@@ -98,7 +91,7 @@ public class AmbassadorConfig {
 
         boolean enableKickReset = config.getOrElse("enable-kick-reset", false);
 
-        return new AmbassadorConfig(silenceWarnings, bypassRegistryCheck, bypassModCheck,
+        return new AmbassadorConfig(silenceWarnings, bypassRegistryCheck,
                 debugMode, enableKickReset, kickReconnectMessageString);
     }
 
@@ -112,10 +105,6 @@ public class AmbassadorConfig {
 
     public boolean isBypassRegistryCheck() {
         return bypassRegistryCheck;
-    }
-
-    public boolean isBypassModCheck() {
-        return bypassModCheck;
     }
 
     public boolean isDebugMode() {

@@ -60,7 +60,7 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
   }
 
   public void handle(VelocityServerConnection server, ConnectedPlayer player,
-                     IForgeLoginWrapperPacket<Context> message) {
+                     IForgeLoginWrapperPacket<?> message) {
     VelocityForgeBackendConnectionPhase newPhase = getNewPhase(server, message);
 
     server.setConnectionPhase(newPhase);
@@ -74,7 +74,7 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
     }
 
     if (!clientPhase.consideredComplete()) {
-      if (message instanceof ModListPacket modListPacket) {
+      if (message instanceof ModListPacket) {
         playerData.resetClientHandshake();
       }
       if (message instanceof RegistryPacket registryPacket) {
@@ -176,7 +176,7 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
       } else if (message instanceof ConfigDataPacket) {
         server.getConnection().write(
                 new ACKPacket(Context.fromContext(message.getContext(), true)));
-      } else if (message instanceof GenericForgeLoginWrapperPacket<Context> packet
+      } else if (message instanceof GenericForgeLoginWrapperPacket<?> packet
               && ForgeHandshakeUtils.ThirdPartyRegistryUtils.isThirdPartyPacket(packet)) {
           server.getConnection().write(
                   ForgeHandshakeUtils.ThirdPartyRegistryUtils
@@ -201,7 +201,7 @@ public enum VelocityForgeBackendConnectionPhase implements BackendConnectionPhas
 
   private VelocityForgeBackendConnectionPhase getNewPhase(
           VelocityServerConnection serverConnection,
-          IForgeLoginWrapperPacket<Context> packet) {
+          IForgeLoginWrapperPacket<?> packet) {
     VelocityForgeBackendConnectionPhase phaseToTransitionTo = nextPhase();
     if (phaseToTransitionTo != this) {
       phaseToTransitionTo.onTransitionToNewPhase(serverConnection);

@@ -56,7 +56,7 @@ public class VelocityEventHandler {
   public void onPlayerChooseInitialServerEvent(
           PlayerChooseInitialServerEvent event, Continuation continuation) {
     ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
-    if (!(player.getPhase() instanceof VelocityForgeClientConnectionPhase phase)) {
+    if (!(player.getPhase() instanceof VelocityForgeClientConnectionPhase)) {
       continuation.resume();
       return;
     }

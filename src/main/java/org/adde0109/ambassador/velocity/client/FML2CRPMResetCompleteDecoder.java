@@ -7,7 +7,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.adde0109.ambassador.forge.packet.Context;
 import org.adde0109.ambassador.forge.packet.GenericForgeLoginWrapperPacket;
-import org.adde0109.ambassador.forge.packet.IForgeLoginWrapperPacket;
 
 public class FML2CRPMResetCompleteDecoder extends ChannelInboundHandlerAdapter {
 

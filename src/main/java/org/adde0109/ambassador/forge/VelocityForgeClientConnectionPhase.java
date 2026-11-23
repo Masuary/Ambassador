@@ -53,7 +53,7 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
     }
 
     @Override
-    public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket msg,
+    public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket<?> msg,
                           VelocityServerConnection server) {
       if (msg.getContext().getResponseID() == 98) {
         player.getConnection().getChannel().pipeline().remove(ForgeConstants.RESET_LISTENER);
@@ -106,13 +106,14 @@ public enum VelocityForgeClientConnectionPhase implements ClientConnectionPhase 
     }
   };
 
-  public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket<Context.ClientContext> msg,
+  public boolean handle(ConnectedPlayer player, IForgeLoginWrapperPacket<?> msg,
                         VelocityServerConnection server) {
     ForgePlayerData data = ForgePlayerData.get(player.getUniqueId());
     ForgeHandshake handshake = data.getClientHandshake();
 
-    if (msg.getContext().getChannelName().equals("zeta:main")) {
-      handshake.zetaFlagsPacket = (GenericForgeLoginWrapperPacket<Context.ClientContext>) msg;
+    if (msg.getContext().getChannelName().equals("zeta:main")
+            && msg instanceof GenericForgeLoginWrapperPacket<?> zetaFlagsPacket) {
+      handshake.zetaFlagsPacket = zetaFlagsPacket;
     }
 
     if (msg instanceof ModListReplyPacket replyPacket) {

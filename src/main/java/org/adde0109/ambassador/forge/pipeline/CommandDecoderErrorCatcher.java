@@ -1,7 +1,6 @@
 package org.adde0109.ambassador.forge.pipeline;
 
 import com.velocitypowered.api.network.ProtocolVersion;
-import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.network.Connections;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
@@ -47,7 +46,6 @@ public class CommandDecoderErrorCatcher extends ChannelInboundHandlerAdapter {
         try {
           ((MinecraftDecoder) ctx.pipeline().get(Connections.MINECRAFT_DECODER)).channelRead(ctx, msg);
         } catch (QuietRuntimeException | CorruptedFrameException e) {
-          RegisteredServer server = player.getConnectedServer().getServer();
           if (!Ambassador.getInstance().config.isSilenceWarnings() && !sentWarning) {
             player.sendMessage(Component.text("[Ambassador Warning]: Unsupported command argument type detected! " +
                     "Please install Proxy-Compatible-Forge mod on this backend server to have access to commands. " +

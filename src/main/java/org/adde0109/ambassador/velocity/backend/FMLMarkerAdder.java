@@ -2,7 +2,6 @@ package org.adde0109.ambassador.velocity.backend;
 
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.config.PlayerInfoForwarding;
-import com.velocitypowered.proxy.connection.ConnectionTypes;
 import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.network.Connections;
@@ -14,7 +13,6 @@ import org.adde0109.ambassador.forge.ForgeFMLConnectionType;
 
 import java.util.List;
 
-import static com.velocitypowered.proxy.connection.forge.legacy.LegacyForgeConstants.HANDSHAKE_HOSTNAME_TOKEN;
 
 public class FMLMarkerAdder extends MessageToMessageEncoder<HandshakePacket> {
 

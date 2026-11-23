@@ -1,6 +1,5 @@
 package org.adde0109.ambassador.forge;
 
-import org.adde0109.ambassador.forge.packet.Context;
 import org.adde0109.ambassador.forge.packet.GenericForgeLoginWrapperPacket;
 import org.adde0109.ambassador.forge.packet.ModListReplyPacket;
 import org.adde0109.ambassador.forge.packet.RegistryPacket;
@@ -13,7 +12,7 @@ import java.util.zip.Checksum;
 public class ForgeHandshake {
     private ModListReplyPacket modListReplyPacket;
     private final Map<String, Long> registries = new HashMap<>();
-    public GenericForgeLoginWrapperPacket<Context.ClientContext> zetaFlagsPacket;
+    public GenericForgeLoginWrapperPacket<?> zetaFlagsPacket;
 
     public ForgeHandshake() {
     }

@@ -20,6 +20,7 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-proxy")
     annotationProcessor("com.velocitypowered:velocity-api")
     compileOnly("com.electronwill.night-config:toml:3.6.6")
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.7.3")
     implementation("org.bstats:bstats-velocity:3.0.1")
     compileOnly("io.netty:netty-buffer:4.1.90.Final")
     compileOnly("io.netty:netty-transport:4.1.90.Final")
@@ -28,6 +29,9 @@ dependencies {
 }
 
 tasks {
+    withType<JavaCompile>().configureEach {
+        options.compilerArgs.addAll(listOf("-Xlint:all,-processing", "-Werror"))
+    }
     jar {
         dependsOn(shadowJar);
         enabled = false;
