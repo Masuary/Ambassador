@@ -26,11 +26,21 @@ dependencies {
     compileOnly("io.netty:netty-transport:4.1.90.Final")
     compileOnly("io.netty:netty-codec:4.1.90.Final")
     compileOnly("io.netty:netty-handler:4.1.90.Final")
+
+    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("com.velocitypowered:velocity-proxy")
+    testImplementation("com.electronwill.night-config:toml:3.6.6")
+    testImplementation("com.github.spotbugs:spotbugs-annotations:4.7.3")
 }
 
 tasks {
     withType<JavaCompile>().configureEach {
         options.compilerArgs.addAll(listOf("-Xlint:all,-processing", "-Werror"))
+    }
+    test {
+        useJUnitPlatform()
     }
     jar {
         dependsOn(shadowJar);

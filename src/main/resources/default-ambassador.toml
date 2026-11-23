@@ -13,8 +13,8 @@ silence-warnings = false
 # can lead to unstable behaviour.
 bypass-registry-checks = false
 
-# Allow player to switch without reset when the server's mods don't match. Even more unstable than bypassRegistryCheck.
-# Warning: This is a safety measure for when bypassRegistryCheck is true. Setting this to also true can cause crashes.
+# Not used: this build never checks the server's mods, so this setting has no effect.
+# Kept so existing config files stay valid.
 bypass-mod-checks = false
 
 # Only for debug/troubleshooting

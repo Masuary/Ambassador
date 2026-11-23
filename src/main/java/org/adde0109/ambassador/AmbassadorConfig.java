@@ -27,8 +27,9 @@ public class AmbassadorConfig {
     @Expose
     private String kickReconnectMessageString = "<red>Please reconnect.</red>";
 
-    private AmbassadorConfig(boolean silenceWarnings, boolean bypassRegistryCheck,
+    private AmbassadorConfig(int serverSwitchCancellationTime, boolean silenceWarnings, boolean bypassRegistryCheck,
                              boolean debugMode, boolean enableKickReset, String kickReconnectMessageString) {
+        this.serverSwitchCancellationTime = serverSwitchCancellationTime;
         this.silenceWarnings = silenceWarnings;
         this.bypassRegistryCheck = bypassRegistryCheck;
         this.debugMode = debugMode;
@@ -91,7 +92,7 @@ public class AmbassadorConfig {
 
         boolean enableKickReset = config.getOrElse("enable-kick-reset", false);
 
-        return new AmbassadorConfig(silenceWarnings, bypassRegistryCheck,
+        return new AmbassadorConfig(serverSwitchCancellationTime, silenceWarnings, bypassRegistryCheck,
                 debugMode, enableKickReset, kickReconnectMessageString);
     }
 
