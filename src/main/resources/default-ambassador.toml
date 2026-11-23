@@ -2,7 +2,8 @@
 config-version = "2.1"
 
 # How much time the player has to reconnect before canceling the server switch. (In seconds)
-# Only for players with ServerRedirect mod installed. Set to -1 to disable ServerRedirect mod support.
+# Used for players with ServerRedirect mod installed and for enable-kick-reset (which uses 30 when this is 0 or less).
+# Set to -1 to disable ServerRedirect mod support.
 serverRedirectTimeout = 30
 
 # Silence PCF absence warnings.

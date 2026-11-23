@@ -55,6 +55,10 @@ public class VelocityEventHandler {
   @Subscribe(order = PostOrder.FIRST)
   public void onPostLoginEvent(PostLoginEvent event, Continuation continuation) {
     ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
+    if (kickExistingPlayers() && player.isActive()) {
+      ForgePlayerData.findOtherActiveHolder(player)
+              .ifPresent(previousSession -> previousSession.disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE));
+    }
     if (player.getPhase() instanceof VelocityForgeClientConnectionPhase) {
       if (!player.isActive()) {
         continuation.resume();
@@ -128,8 +132,6 @@ public class VelocityEventHandler {
     if (!kickExistingPlayers()) {
       return ForgePlayerData.claim(player);
     }
-    ForgePlayerData.findOtherActiveHolder(player)
-            .ifPresent(previousSession -> previousSession.disconnect(ForgeConstants.DUPLICATE_LOGIN_MESSAGE));
     ForgePlayerData.takeOver(player);
     return true;
   }
